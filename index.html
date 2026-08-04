@@ -88,6 +88,64 @@
             border-radius: 8px;
             display: block;
         }
+        .plan-img-wrap {
+            position: relative;
+        }
+        .plan-hotspots {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+        .plan-hint {
+            text-align: center;
+            color: #bbb;
+            font-size: 12px;
+            padding: 8px;
+        }
+        .hs {
+            position: absolute;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            border: 2px solid rgba(74,144,217,0.8);
+            background: rgba(74,144,217,0.25);
+            transition: all 0.2s;
+            overflow: hidden;
+        }
+        .hs:hover {
+            background: rgba(255,200,50,0.4) !important;
+            border-color: #ffc832 !important;
+            transform: scale(1.05);
+            z-index: 10;
+            box-shadow: 0 4px 16px rgba(255,200,50,0.5);
+        }
+        .hs-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            line-height: 1.2;
+            background: rgba(0,0,0,0.6);
+            padding: 3px 6px;
+            border-radius: 4px;
+            pointer-events: none;
+            white-space: nowrap;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        }
+        .hs:hover .hs-label {
+            background: rgba(200,140,0,0.85);
+        }
+        .hs.shop {
+            border-color: rgba(224,112,64,0.8) !important;
+            background: rgba(224,112,64,0.25) !important;
+        }
+        .hs.shop:hover {
+            background: rgba(255,200,50,0.4) !important;
+            border-color: #ffc832 !important;
+        }
         .building-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
@@ -322,11 +380,9 @@
         <div class="section-title">总平图</div>
         <div class="section-sub">点击下方楼栋编号，查看对应楼栋销控图</div>
         <div class="plan-img-wrap">
-            <img class="plan-img" id="planImg" src="plan.jpg" alt="项目总平图"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-            <div style="display:none; padding:80px 20px; text-align:center; color:#bbb;">
-                总平图待补充<br><small>请将项目总平图保存为 plan.jpg 放入同目录</small>
-            </div>
+            <img class="plan-img" id="planImg" src="floorplans/plan.jpg" alt="项目总平图">
+            <div id="planHotspots" class="plan-hotspots"></div>
+            <div class="plan-hint">点击楼栋编号进入销控图</div>
         </div>
         <div class="building-grid" id="buildingGrid"></div>
     </div>
@@ -459,9 +515,48 @@
             document.getElementById('modalOverlay').classList.remove('show');
         }
 
+        // ===== 总平图热点 =====
+        const buildings_hotspots = [
+            {id:'20#',label:'20#<br>188㎡',x:22.0,y:8.0,w:4.5,h:14.0},
+            {id:'19#',label:'19#<br>188㎡',x:26.0,y:8.0,w:4.0,h:14.0},
+            {id:'18#',label:'18#<br>188㎡',x:29.5,y:10.0,w:4.0,h:14.0},
+            {id:'16#',label:'16#<br>288㎡',x:27.0,y:14.0,w:4.0,h:17.0},
+            {id:'17#',label:'17#<br>246㎡',x:22.5,y:17.0,w:3.5,h:6.0},
+            {id:'13#',label:'13#<br>188㎡',x:31.0,y:15.5,w:4.5,h:15.0},
+            {id:'15#',label:'15#<br>246㎡',x:22.5,y:21.0,w:3.5,h:6.0},
+            {id:'6#', label:'6#<br>188㎡', x:32.0,y:22.0,w:4.5,h:15.0},
+            {id:'8#', label:'8#<br>188㎡', x:23.0,y:26.0,w:5.0,h:8.5},
+            {id:'7#', label:'7#<br>268㎡', x:28.0,y:24.0,w:4.0,h:14.0},
+            {id:'9#', label:'9#<br>188㎡', x:18.0,y:26.5,w:5.0,h:8.5},
+            {id:'10#',label:'10#<br>246㎡',x:14.5,y:28.0,w:4.0,h:7.0},
+            {id:'1#', label:'1#<br>188㎡', x:33.0,y:30.0,w:4.5,h:17.0},
+            {id:'11#',label:'11#<br>168㎡',x:10.5,y:29.5,w:4.5,h:6.5},
+            {id:'12#',label:'12#<br>198㎡',x:6.5, y:30.5,w:3.5,h:6.5},
+            {id:'5#', label:'5#<br>168㎡', x:7.0, y:36.0,w:7.5,h:6.0},
+            {id:'3#', label:'3#<br>168㎡', x:15.5,y:36.0,w:8.0,h:6.5},
+            {id:'2#', label:'2#<br>168㎡', x:24.5,y:36.0,w:7.0,h:6.5},
+            {id:'S2#',label:'S2#<br>商铺',x:34.5,y:44.0,w:5.0,h:4.5,shop:true},
+            {id:'S3#',label:'S3#<br>商铺',x:30.0,y:44.0,w:4.0,h:4.5,shop:true},
+            {id:'S4#',label:'S4#<br>商铺',x:22.0,y:44.0,w:6.0,h:4.5,shop:true},
+            {id:'13商铺#',label:'13商铺#',x:19.5,y:35.5,w:4.0,h:4.0,shop:true},
+            {id:'18商铺#',label:'18商铺#',x:33.0,y:16.0,w:3.5,h:3.5,shop:true},
+            {id:'19商铺#',label:'19商铺#',x:28.0,y:9.0, w:3.5,h:3.5,shop:true},
+            {id:'20商铺#',label:'20商铺#',x:23.5,y:9.0, w:3.5,h:3.5,shop:true},
+        ];
+
+        function renderPlanHotspots() {
+            const wrap = document.getElementById('planHotspots');
+            if (!wrap) return;
+            wrap.innerHTML = buildings_hotspots.map(b => `
+                <a class="hs${b.shop ? ' shop' : ''}" href="sales_control_show.html?b=${encodeURIComponent(b.id)}" title="${b.id}">
+                    <span class="hs-label">${b.label}</span>
+                </a>`).join('');
+        }
+
         renderOverview();
         renderBuildingGrid();
         renderLayouts();
+        renderPlanHotspots();
     </script>
 </body>
 </html>
