@@ -477,37 +477,41 @@
             Object.keys(layouts).forEach(key => loadFloorplan(key));
         }
 
+        // 图片加载顺序: jpg → png → svg
+        function tryImage(imgEl, paths) {
+            let idx = 0;
+            function tryNext() {
+                if (idx >= paths.length) {
+                    const key = imgEl.id === 'modalImg' ? '' : imgEl.id.replace('img-','');
+                const showName = key && layouts[key] ? layouts[key].name : '该户型';
+                imgEl.outerHTML = '<div class="layout-img-missing">户型图待补充<br><small>请将 ' + showName + ' 户型图保存为 floorplans/' + (key || 'key') + '.jpg</small></div>';
+                    return;
+                }
+                const t = new Image();
+                t.onload = () => { imgEl.src = t.src; };
+                t.onerror = () => { idx++; tryNext(); };
+                t.src = paths[idx];
+            }
+            tryNext();
+        }
+
         function loadFloorplan(key) {
             const img = document.getElementById('img-' + key);
             if (!img) return;
-            // 先尝试 jpg
-            const tryJpg = new Image();
-            tryJpg.onload = () => { img.src = tryJpg.src; };
-            tryJpg.onerror = () => {
-                // 再尝试 svg
-                const trySvg = new Image();
-                trySvg.onload = () => { img.src = trySvg.src; };
-                trySvg.onerror = () => {
-                    img.outerHTML = '<div class="layout-img-missing">户型图待补充<br><small>请将 ' + layouts[key].name + ' 户型图保存为 floorplans/' + key + '.jpg</small></div>';
-                };
-                trySvg.src = 'floorplans/' + key + '.svg';
-            };
-            tryJpg.src = 'floorplans/' + key + '.jpg';
+            tryImage(img, [
+                'floorplans/' + key + '.jpg',
+                'floorplans/' + key + '.png',
+                'floorplans/' + key + '.svg'
+            ]);
         }
 
         function openLayout(key, name) {
             const modalImg = document.getElementById('modalImg');
-            const tryJpg = new Image();
-            tryJpg.onload = () => { modalImg.src = tryJpg.src; };
-            tryJpg.onerror = () => {
-                const trySvg = new Image();
-                trySvg.onload = () => { modalImg.src = trySvg.src; };
-                trySvg.onerror = () => {
-                    modalImg.outerHTML = '<div class="modal-empty">户型图待补充<br><small>请将 ' + name + ' 户型图保存为 floorplans/' + key + '.jpg</small></div>';
-                };
-                trySvg.src = 'floorplans/' + key + '.svg';
-            };
-            tryJpg.src = 'floorplans/' + key + '.jpg';
+            tryImage(modalImg, [
+                'floorplans/' + key + '.jpg',
+                'floorplans/' + key + '.png',
+                'floorplans/' + key + '.svg'
+            ]);
             document.getElementById('modalOverlay').classList.add('show');
         }
 
