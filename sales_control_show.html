@@ -320,6 +320,19 @@
             }).join('');
         }
 
+        // URL 参数支持（从总平图直接进入指定楼栋）
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const b = params.get('b');
+            if (b) {
+                // 检查该楼栋是否存在
+                const exists = allData.some(d => d.building === b);
+                if (exists) {
+                    selectBuilding(b);
+                }
+            }
+        })();
+
         initBuildingNav();
         updateSalesGrid();
     </script>
